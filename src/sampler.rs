@@ -11,8 +11,7 @@ use core::f64;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-#[cfg(not(feature = "std"))]
-use libm::F64Ext;
+use libm;
 
 #[cfg(not(feature = "std"))]
 use super::math;
@@ -557,7 +556,7 @@ impl Sampler {
         }
 
         // 16 bits -> -96dB stopband attenuation.
-        let atten = -20.0f64 * (1.0 / (1i32 << 16) as f64).log10();
+        let atten = -20.0f64 * libm::log10(1.0 / (1i32 << 16) as f64);
         // A fraction of the bandwidth is allocated to the transition band,
         let dw = (1.0f64 - 2.0 * pass_freq / sample_freq) * pi;
         // The cutoff frequency is midway through the transition band.
@@ -588,7 +587,7 @@ impl Sampler {
         } else {
             FIR_RES_FAST
         };
-        let n = ((res as f64 / cycles_per_sample).ln() / (2.0f64).ln()).ceil() as i32;
+        let n = libm::ceil(libm::log(res as f64 / cycles_per_sample) / libm::log(2.0f64)) as i32;
         self.fir.res = 1 << n;
 
         self.fir.data.clear();
@@ -608,11 +607,11 @@ impl Sampler {
                 let wt = wc * jx / cycles_per_sample;
                 let temp = jx / fir_n_div2 as f64;
                 let kaiser = if temp.abs() <= 1.0 {
-                    self.i0(beta * self.sqrt(1.0 - temp * temp)) / io_beta
+                    self.i0(beta * libm::sqrt(1.0 - temp * temp)) / io_beta
                 } else {
                     0f64
                 };
-                let sincwt = if wt.abs() >= 1e-6 { wt.sin() / wt } else { 1.0 };
+                let sincwt = if wt.abs() >= 1e-6 { libm::sin(wt) / wt } else { 1.0 };
                 let val = (1i32 << FIR_SHIFT) as f64 * filter_scale * samples_per_cycle * wc / pi
                     * sincwt
                     * kaiser;
@@ -638,11 +637,6 @@ impl Sampler {
             }
         }
         sum
-    }
-
-    #[cfg(feature = "std")]
-    fn sqrt(&self, value: f64) -> f64 {
-        value.sqrt()
     }
 
     #[cfg(not(feature = "std"))]

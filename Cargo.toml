@@ -20,7 +20,7 @@ alloc = []
 
 [dependencies]
 bit_field = "0.10"
-libm = { version = "0.1.4", optional = true }
+libm = { version = "0.2.11"}
 
 [dev-dependencies]
 criterion = "0.2"
